@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.file.mapper.LessonFileMapper">
+
+<insert id="insert">
+	insert into alz_lesson_img (id, lesson_id, image, description, path)
+	values (#{uuid}, #{lessonId}, #{fileName}, #{fileType}, #{uploadPath})
+</insert>
+
+<delete id="delete">
+	DELETE FROM alz_board_file WHERE uuid = #{uuid}
+</delete>
+
+<delete id="deleteAll">
+	DELETE FROM alz_lesson_img WHERE lesson_id = #{lessonId}
+</delete>
+
+<select id="findByLessonId" resultType="alz.file.domain.LessonFileDTO">
+	SELECT id uuid, lesson_id lessonId, image fileName, description fileType, path uploadPath
+	FROM   alz_lesson_img 
+	WHERE  lesson_id = #{lessonId}
+</select>
+
+<select id="getOldFiles" resultType="alz.file.domain.LessonFileDTO">
+	SELECT * FROM alz_lesson_img WHERE path = to_char(sysdate -1, 'yyyy\mm\dd')
+</select>
+
+</mapper>

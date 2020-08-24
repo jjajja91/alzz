@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.file.mapper.BoardFileMapper">
+
+<insert id="insert">
+	INSERT INTO alz_board_file (uuid, uploadpath, filename, filetype, board_id)
+	VALUES (#{uuid}, #{uploadPath}, #{fileName}, #{fileType}, #{boardId})
+</insert>
+
+<delete id="delete">
+	DELETE FROM alz_board_file WHERE uuid = #{uuid}
+</delete>
+
+<delete id="deleteAll">
+	DELETE FROM alz_board_file WHERE board_id = #{boardId}
+</delete>
+
+<select id="findByBoardId" resultType="alz.file.domain.BoardFileDTO">
+	SELECT * FROM alz_board_file WHERE board_id = #{boardId}
+</select>
+
+<select id="getOldFiles" resultType="alz.file.domain.BoardFileDTO">
+	SELECT * FROM alz_board_file WHERE uploadpath = to_char(sysdate -1, 'yyyy\mm\dd')
+</select>
+
+</mapper>

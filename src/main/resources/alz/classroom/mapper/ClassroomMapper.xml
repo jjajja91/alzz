@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+<mapper namespace="alz.classroom.mapper.ClassroomMapper">
+
+	<select id="findStudentByLesson" resultType="Long">
+		SELECT STUDENT_ID FROM ALZ_LESSON_STUDENT WHERE LESSON_ID = #{lessonId}
+	</select>
+
+</mapper>

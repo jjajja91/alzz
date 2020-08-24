@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="alz.user.mapper.UserMapper">
+
+	<!-- 아이디 찾기 -->
+	<select id="find_id" parameterType="String" resultType="String">
+		select email from alz_user where nickname = #{nickname} AND PHONE_NUMBER = #{phoneNumber}
+	</select>	
+	
+	<!-- 비밀번호 찾기 관련 mapper -->
+	<select id="find_password_email" parameterType="alz.user.domain.UserDTO" resultType="String">
+		select password from alz_user where nickname = #{nickname} and email = #{email}
+	</select>
+
+	<select id="checkUser" resultType="Integer">
+		select count(*) from alz_user
+		where email = #{email}
+		and role != 'ROLE_USER'
+	</select>
+	
+	<!-- 비밀번호 변경 관련 mapper -->
+	<update id="modifyPwd">
+		UPDATE alz_user
+		SET
+		password = #{password}
+		WHERE email = #{email}
+	</update>
+
+	<!-- 이메일 중복 체크 -->
+	<select id="emailChk" resultType="Integer">
+		SELECT COUNT(*) FROM alz_user
+		WHERE email = #{email}
+	</select>
+	
+	<!-- 닉네임 중복 체크 -->
+	<select id="nicknameChk" resultType="Integer">
+		SELECT COUNT(*) FROM alz_user
+		WHERE nickname = #{nickname}
+	</select>
+	
+	<!-- 전화번호 중복 체크 -->
+	<select id="phoneNumberChk" resultType="Integer">
+		SELECT COUNT(*) FROM alz_user
+		WHERE PHONE_NUMBER = #{phoneNumber}
+	</select>
+	
+	<select id="selectByEmail" resultType="alz.user.domain.UserDTO">
+		SELECT * FROM alz_user
+		WHERE email = #{email}
+	</select>
+	
+	<select id="selectByNickname" resultType="alz.user.domain.UserDTO">
+		SELECT nickname FROM alz_user
+		WHERE nickname = #{nickname}
+	</select>
+
+	<select id="selectByPhoneNumber" resultType="alz.user.domain.UserDTO">
+		SELECT * FROM alz_user
+		WHERE PHONE_NUMBER = #{phoneNumber}
+	</select>
+
+	<select id="selectAll" resultType="alz.user.domain.UserDTO">
+      <![CDATA[
+         SELECT
+         users.id, email, nickname, password, role, certification_State certificationState, phone_Number phoneNumber, state, start_At startAt, end_At endAt 
+         FROM
+         alz_user users LEFT OUTER JOIN alz_user_state state on
+         users.id = state.id
+         WHERE users.id >= 0
+      ]]>
+	</select>
+	
+	<update id="changeTeacher">
+		UPDATE alz_user SET ROLE='ROLE_TEACHER' WHERE id = #{userId}
+	</update>
+
+	<insert id="insert" parameterType="alz.user.domain.UserDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_user_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO ALZ_USER (ID, EMAIL, NICKNAME, PASSWORD, ROLE, PHONE_NUMBER)
+		VALUES(#{id}, #{email}, #{nickname}, #{password}, #{role}, #{phoneNumber})
+
+		<!-- INSERT INTO ALZ_USER_STATE(STATE, END_AT, END_AT) VALUES(#{state}, 
+			sysdate, #{endAt}) -->
+
+		<!-- INSERT INTO ALZ_USER (ID, EMAIL, NICKNAME, PASSWORD, ROLE, CERTIFICATION_STATE) 
+			VALUES(#{id}, #{email}, #{nickname}, #{password}, #{role}, #{certificationState}) 
+			
+			INSERT INTO ALZ_USER_STATE(STATE, END_AT, END_AT) VALUES(#{state}, 
+			sysdate, #{endAt}) -->
+	</insert>
+
+	<insert id="insertState">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_user_state_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO ALZ_USER_STATE (ID, USER_ID, STATE, DESCRIPTION)
+		VALUES(#{id}, #{userId}, #{state}, #{description, jdbcType=VARCHAR})
+	</insert>
+	
+	<insert id="insertDetail">
+		INSERT INTO ALZ_USER_DETAIL (ID)
+		VALUES(#{id})
+	</insert>
+
+	<!-- 값을 다 넣을 때 -->
+	<!-- 
+	<insert id="insert" parameterType="alz.user.domain.UserDTO"> 
+	<selectKey keyProperty="id" order="BEFORE" resultType="long"> 
+	SELECT alz_user_seq.nextval FROM dual 
+	</selectKey> 
+	INSERT INTO ALZ_USER (ID, EMAIL, NICKNAME, PASSWORD, ROLE, CERTIFICATION_STATE CERTIFICATIONSTATE, RECENTLOG_AT RECENTLOGAT, 
+							MODIFIED_AT MODIFIEDAT, MODIFIED_AT MODIFIEDAT, INTRODUCE, STATE, START_AT STARTAT, END_AT ENDAT, END_AT ENDAT) 
+	VALUES(#{id}, #{email}, #{nickname}, #{password}, #{role}, #{certificationState}, sysdate, #{modifiedAt}, sysdate, #{introduce}, #{likeCnt}, 
+			#{boardCnt}, #{reservCnt}, #{commentCnt}, #{state},#{startAt}, sysdate, #{endAt}) 
+	</insert> 
+	-->
+
+
+	<select id="selectById" resultType="alz.user.domain.UserDTO">
+		SELECT * FROM alz_user WHERE email = #{email} AND password = #{password}
+	</select>
+
+
+    <select id="selectedByUser" resultType="alz.user.domain.UserDTO">
+		SELECT * FROM alz_user WHERE email = #{email}
+	</select>
+
+  
+	<select id="userInfo" resultType="alz.user.domain.UserDTO">
+		SELECT * FROM alz_user WHERE id = #{id}
+	</select>
+	
+	
+	<!-- 값을 다 넣을 때 -->
+	<!-- <select id="selectById" resultType="alz.user.domain.UserDTO"> 
+	SELECT * FROM alz_user WHERE id = #{id} </select> -->
+
+	<update id="updateById">
+		UPDATE alz_user
+		SET nickname = #{nickname},
+		password = #{password},
+		role = #{role},
+		certification_State = '1',
+<!-- 		certification_State = #{certificationState}, -->
+		PHONE_NUMBER = #{phoneNumber}
+		WHERE email = #{email}
+	</update>
+
+	<!-- 값을 다 넣을 때 -->
+	<!-- <update id="updatedById"> UPDATE alz_user SET nickname = #{nickname}, 
+		password = #{password}, role = #{role}, certification_State = #{certificationState}, 
+		recentlog_At = sysdate, 디폴트값이 시스데이트 이므로 필요없음 modified_At = sysdate, modified_At 
+		= #{modifiedAt}, 직접 값을 넣고 싶으면 활성화 introduce = #{introduce}, like_Cnt = #{likeCnt}, 
+		board_Cnt = #{boardCnt}, reserv_Cnt = #{reservCnt}, comment_Cnt = #{commentCnt}, 
+		state = #{state}, start_At = sysdate, end_At = sysdate, end_At = #{endAt} 
+		직접 값을 넣고 싶으면 활성화 WHERE id = #{id} </update> -->
+
+	<delete id="deleteById">
+		DELETE FROM alz_user WHERE id = #{id}
+	</delete>
+	
+	<select id="findUserByEmailNickname" parameterType="alz.user.domain.UserDTO" resultType="int">
+		select count(*) from alz_user
+		where email = #{email}
+		and nickname = #{nickname}
+		and role = 'ROLE_USER'
+	</select>
+	
+	<select id="searchId" resultType="String">
+		SELECT ID FROM alz_user WHERE email = #{email}
+	</select>
+	
+	<select id="findWithdrawUser" resultType="long">
+		SELECT ID FROM alz_user_state where start_at = #{date}
+	</select>
+	
+</mapper>

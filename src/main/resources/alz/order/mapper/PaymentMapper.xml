@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.order.mapper.PaymentMapper">
+
+	<insert id="insert" parameterType="alz.order.domain.PaymentDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_class_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO
+		ALZ_CLASS(ID,NAME,DISCRIPTION,OPEN_AT,CLOSE_AT,START_AT,END_AT,
+		STATE,CATEGORY_ID, TEACHER_ID)
+		VALUES (#{id}, #{name}, #{discription},
+		#{openAt}, #{closeAt}, #{startAt},
+		#{endAt}, #{state}, #{categoryId},
+		#{teacherId})
+	</insert>
+	<select id="findById" resultType="alz.order.domain.PaymentDTO">
+	<![CDATA[SELECT * FROM ALZ_CLASS WHERE id = #{id}]]>
+	</select>
+	<select id="findAll" resultType="alz.order.domain.PaymentDTO">
+	<![CDATA[SELECT * FROM ALZ_CLASS]]>
+	</select>
+	<update id="updateById"
+		parameterType="alz.order.domain.PaymentDTO">
+		UPDATE ALZ_CLASS
+		SET name = #{name},
+		discription =
+		#{discription},
+		open_at = #{openAt},
+		close_at = #{closeAt},
+		start_at =
+		#{startAt},
+		end_at = #{endAt},
+		state = #{state},
+		category_id =
+		#{categoryId}
+		WHERE id = #{id}
+	</update>
+	<delete id="deleteById">
+		DELETE FROM ALZ_CLASS WHERE id = #{id}
+	</delete>
+
+
+</mapper>

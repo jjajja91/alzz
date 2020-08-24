@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.myPage.mapper.MyPageMapper">
+
+	<!-- <sql id="myPageCriteria"> <trim prefix="(" suffix=") AND " prefixOverrides="OR"> 
+		<foreach collection="typeArr" item='type'> <trim prefix="OR"> <choose> <when 
+		test="type == 'T'.toString()"> title like '%'||#{keyword}||'%' </when> <when 
+		test="type == 'C'.toString()"> content like '%'||#{keyword}||'%' </when> 
+		<when test="type == 'W'.toString()"> nickname like '%'||#{keyword}||'%' </when> 
+		</choose> </trim> </foreach> </trim> </sql> - -->
+		
+	<select id="selectAll" resultType="alz.board.domain.BoardDTO">
+		<![CDATA[
+			select id, title, content, written_at writtenAt, updated_at updatedAt, like_cnt likeCnt, 
+					comment_cnt commentCnt, view_cnt viewCnt, board_order boardOrder, nickname, 
+					parent_id parentId, type_id typeId, writer_id writerId  
+			from alz_board 
+			where  writer_id =  #{id}
+			
+		]]>
+	</select>
+
+	<select id="selectWithPaging"
+		resultType="alz.board.domain.BoardDTO">
+	<![CDATA[
+          select id, title, content, writtenAt, updatedAt, likeCnt, commentCnt, viewCnt,
+               boardOrder, nickname, parentId, typeId, writerId  
+            from (select rownum, rn, id, title, content, writtenAt, updatedAt, likeCnt, commentCnt, 
+                         viewCnt, boardOrder, nickname, parentId, typeId, writerId 
+                 from (select rownum rn, id, title, content, writtenAt, updatedAt, likeCnt, commentCnt, 
+                            viewCnt, boardOrder, nickname, parentId, typeId, writerId
+                        from (select id, title, content, written_at writtenAt, updated_at updatedAt, 
+                                     like_cnt likeCnt, comment_cnt commentCnt, view_cnt viewCnt,
+                                     board_order boardOrder, nickname, parent_id parentId, type_id typeId, writer_id writerId 
+                               from alz_board
+                         where writer_id = #{id}
+                           order by id desc)
+                     where rownum <= #{pageNum} * #{amount} )
+			)
+		where 		
+       	rn > (#{pageNum} -1) * #{amount}
+		order by id desc	
+		]]>
+	</select>
+
+	<select id="commentSelectWithPaging"
+		resultType="alz.board.domain.CommentDTO">
+		<![CDATA[
+		select * from(
+		select rownum rn, id, content, written_at, updated_at, like_cnt, comment_cnt, comment_code, board_id, nickname, depth, deleted, user_id
+		from( select * from alz_comment
+		where user_id = #{id}
+		order by written_at desc))
+		where rn <= #{pageNum} * #{amount}
+		and rn > (#{pageNum}-1) * #{amount}
+		]]>
+	</select>
+
+	<select id="likeSelectWithPaging"
+		resultType="alz.board.domain.BoardDTO">
+		<![CDATA[	
+		select * from(
+		select rownum rn, id, title, content, written_at, comment_cnt, view_cnt, nickname
+		from (select b.id, b.title, b.content, b.written_at, b.comment_cnt, b.view_cnt, b.nickname 
+		from alz_board b, alz_link_like_board l
+		where b.id = l.board_id
+		and l.user_id = #{id}
+		order by written_at desc))
+		where rn <= #{pageNum} * #{amount}
+		and rn > (#{pageNum}-1) * #{amount}
+		]]>
+	</select>
+
+	<select id="likeSelectAll"
+		resultType="alz.board.domain.BoardDTO">
+		select *
+		from alz_board b
+		join
+		(select *
+		from
+		alz_link_like_board
+		where user_id = #{id}
+		order by id desc )l
+		on
+		b.id=l.board_id
+	</select>
+	
+	<select id="teachedLessonList" resultType="alz.lesson.domain.LessonDTO">
+     <![CDATA[
+        select * from
+        (select rownum rn, id, title, thumbnail, open_at, close_at from
+        (select l.id, l.title, l.thumbnail, l.open_at, l.close_at
+        from
+        alz_lesson l,
+        alz_teacher t
+        where l.teacher_id = t.id
+        and t.user_id = #{id}
+        and l.state = 10))
+        where rn <= #{pageNum} * #{amount}
+        and rn > (#{pageNum}-1) * #{amount}
+     ]]>
+     </select>
+	
+	<select id="teachingLessonList" resultType="alz.lesson.domain.LessonDTO">
+     <![CDATA[
+        select * from
+        (select rownum rn, id, title, thumbnail, open_at, close_at from
+        (select l.id, l.title, l.thumbnail, l.open_at, l.close_at
+        from
+        alz_lesson l,
+        alz_teacher t
+        where l.teacher_id = t.id
+        and t.user_id = #{id}
+        and l.state = 9))
+        where rn <= #{pageNum} * #{amount}
+        and rn > (#{pageNum}-1) * #{amount}
+     ]]>
+     </select>
+
+     <select id="myLessonList" resultType="alz.lesson.domain.LessonDTO">
+     <![CDATA[
+    	select * from 
+    	(select rownum rn, id, teacher_id, title, thumbnail, open_at, close_at from
+    	(select l.id, l.teacher_id, l.title, l.thumbnail, l.open_at, l.close_at
+      	from
+      	alz_order o,
+        alz_order_detail od,
+        alz_merchandise md,
+        alz_lesson l
+        where od.merchandise_id = md.id
+        and o.id = od.order_id
+        and md.ref_id = l.id
+        and o.state = '결제완료'
+        and od.user_id = #{id}
+        order by l.open_at desc))
+        where rn <= #{pageNum} * #{amount}
+        and rn > (#{pageNum}-1) * #{amount}
+     ]]>
+     </select>
+     
+     <select id="finishedLessonList" resultType="alz.lesson.domain.LessonDTO">
+     <![CDATA[
+        select * from 
+    	(select rownum rn, id, title, thumbnail, open_at, close_at from
+    	(select l.id, l.title, l.thumbnail, l.open_at, l.close_at
+      	from
+        alz_order_detail od,
+        alz_merchandise md,
+        alz_lesson l
+        where od.merchandise_id = md.id
+        and md.ref_id = l.id
+        and l.state = 10
+        and od.user_id = #{id}
+        order by l.open_at desc))
+        where rn <= #{pageNum} * #{amount}
+        and rn > (#{pageNum}-1) * #{amount} 
+     ]]>
+     </select>
+     
+      <select id="refundedLesson" resultType="alz.lesson.domain.LessonDTO">
+     <![CDATA[
+    	select * from 
+    	(select rownum rn, id, title, thumbnail, open_at, close_at from
+    	(select l.id, l.title, l.thumbnail, l.open_at, l.close_at
+      	from
+      	alz_order o,
+        alz_order_detail od,
+        alz_merchandise md,
+        alz_lesson l
+        where od.merchandise_id = md.id
+        and o.id = od.order_id
+        and md.ref_id = l.id
+        and o.state = '취소완료'
+        and od.user_id = #{id}
+        order by l.open_at desc))
+        where rn <= #{pageNum} * #{amount}
+        and rn > (#{pageNum}-1) * #{amount}
+     ]]>
+     </select>
+
+	<select id="selectById" resultType="alz.board.domain.BoardDTO">
+		select id, title, content,
+		written_at writtenAt, updated_at updatedAt, like_cnt likeCnt,
+		comment_cnt commentCnt,
+		view_cnt viewCnt, board_order boardOrder,
+		nickname, parent_id parentId,
+		type_id typeId, writer_id writerId
+		from
+		alz_board where id = #{id}
+	</select>
+
+	<select id="getTotalCount" resultType="int">
+		select count(*)
+		from
+		alz_board
+		where
+
+		id > 0
+	</select>
+
+	<select id="getCommentsCnt" resultType="long">
+		select comment_cnt from
+		alz_board where id = #{id}
+	</select>
+
+	<select id="myLikeCnt" resultType="long">
+		select count(*) from alz_link_like_board
+		where user_id = #{id}
+	</select>
+	
+	<select id="myBoardCnt" resultType="long">
+		select board_cnt from alz_user_detail
+		where id = #{id}
+	</select>
+	
+	<select id="myCommentCnt" resultType="long">
+		select comment_cnt from alz_user_detail
+		where id = #{id}
+	</select>
+
+	<select id="getLikeCnt">
+		select like_cnt from
+		alz_board where id = #{id}
+	</select>
+	
+	<select id="getActiveLessonTotal" resultType="Integer">
+		select count(*)
+      	from
+      	alz_order o,
+        alz_order_detail od,
+        alz_merchandise md,
+        alz_lesson l
+        where od.merchandise_id = md.id
+        and o.id = od.order_id
+        and md.ref_id = l.id
+        and o.state = '결제완료'
+        and od.user_id = #{id}
+	</select>
+	
+	<select id="getFinishedLessonTotal" resultType="Integer">
+		select count(*)
+      	from
+        alz_order_detail od,
+        alz_merchandise md,
+        alz_lesson l
+        where od.merchandise_id = md.id
+        and md.ref_id = l.id
+        and l.state = 10
+        and od.user_id = #{id}
+	</select>
+	
+	<select id="getRefundedLessonTotal" resultType="Integer">
+		select count(*)
+      	from
+      	alz_order o,
+        alz_order_detail od,
+        alz_merchandise md,
+        alz_lesson l
+        where od.merchandise_id = md.id
+        and o.id = od.order_id
+        and md.ref_id = l.id
+        and o.state = '취소완료'
+        and od.user_id = #{id}
+	</select>
+
+	<select id="selectByUserId" resultType="alz.user.domain.UserDTO">
+		select *
+		from alz_user
+		where id = #{id} 
+	</select>
+
+   <insert id="deleteAcc">
+   		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_user_state_seq.nextval FROM dual
+		</selectKey>
+       insert into alz_user_state (id, user_id, state, description) values (#{id}, #{userId}, '탈퇴', #{description})
+   </insert>
+
+	<update id="updateEnable" parameterType="alz.user.domain.UserDTO">
+		update alz_user
+		set enable = 0
+		where id = #{id}
+	</update>
+	
+	
+	<select id="likeLessonSelectWithPaging"
+		resultType="alz.lesson.domain.LessonDTO">
+		<![CDATA[	
+    	select * from 
+    	(select rownum rn, id, teacher_id, title, thumbnail, open_at, close_at from
+    	(select l.id, l.teacher_id, l.title, l.thumbnail, l.open_at, l.close_at
+      	from
+        alz_lesson l, alz_link_like_lesson ll
+        where l.id = ll.lesson_id
+        and ll.user_id = #{id}
+        order by l.open_at desc))
+        where rn <= #{pageNum} * #{amount}
+        and rn > (#{pageNum}-1) * #{amount}
+		]]>
+	</select>
+	
+	
+	<select id="reservLessonSelectWithPaging"
+		resultType="alz.lesson.domain.LessonDTO">
+		<![CDATA[	
+    	select * from 
+    	(select rownum rn, id, teacher_id, title, thumbnail, open_at, close_at from
+    	(select l.id, l.teacher_id, l.title, l.thumbnail, l.open_at, l.close_at
+      	from
+        alz_lesson l, alz_link_reserv_lesson rl
+        where l.id = rl.lesson_id
+        and rl.user_id = #{id}
+        order by l.open_at desc))
+        where rn <= #{pageNum} * #{amount}
+        and rn > (#{pageNum}-1) * #{amount}
+		]]>
+	</select>
+	
+	<select id="getMyLikeLessonTotal" resultType="long">
+		select count(*) from 
+        alz_lesson l, alz_link_like_lesson ll
+        where l.id = ll.lesson_id
+        and ll.user_id = #{id}
+	</select>
+
+	<select id="getMyReservLessonTotal" resultType="long">
+		select count(*) from 
+        alz_lesson l, alz_link_reserv_lesson rl
+        where l.id = rl.lesson_id
+        and rl.user_id = #{id}
+	</select>
+	
+	
+	
+</mapper>

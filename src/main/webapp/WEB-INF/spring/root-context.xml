@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.3.xs
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- Root Context: defines shared resources visible to all other web components -->
+
+	<context:annotation-config></context:annotation-config>
+	<bean class="alz.main.config.SecurityConfig"/>
+
+
+	
+<!-- ingyo -->
+	<!-- Gmail api -->
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="host" value="smtp.gmail.com" />
+		<property name="port" value="587" />
+		<property name="username" value="alz10041004@gmail.com" />
+		<property name="password" value="!alz1004" />
+		<property name="defaultEncoding" value="utf-8" />
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.transport.protocol">smtp</prop>
+				<prop key="mail.smtp.auth">true</prop>
+				<prop key="mail.smtp.starttls.enable">true</prop>
+				<prop key="mail.debug">true</prop>
+			</props>
+		</property>
+	</bean>
+<!-- ingyo -->
+
+
+
+	<bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+		<!-- <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"></property> 
+			<property name="jdbcUrl" value="jdbc:oracle:thin:@localhost:1521:XE"></property> -->
+
+		<property name="driverClassName"
+			value="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"></property>
+		<property name="jdbcUrl"
+			value="jdbc:log4jdbc:oracle:thin:@localhost:1521:XE"></property>
+		<property name="username" value="c##alz_ex"></property>
+		<property name="password" value="alz_ex"></property>
+	</bean>
+
+	<!-- HikariCP configuration -->
+	<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource"
+		destroy-method="close">
+		<constructor-arg ref="hikariConfig" />
+	</bean>
+		
+		<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+			<property name="dataSource" ref="dataSource"></property>
+			<property name="configLocation" value="classpath:/mybatis/config/mybatis-config.xml"></property>
+		</bean>
+		
+		<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+			<property name="dataSource" ref="dataSource"></property>
+		</bean>
+		
+		<mybatis-spring:scan base-package="alz.lesson.mapper"/>
+		<mybatis-spring:scan base-package="alz.user.mapper"/>
+    	<mybatis-spring:scan base-package="alz.order.mapper"/>
+		<mybatis-spring:scan base-package="alz.board.mapper"/>
+		<mybatis-spring:scan base-package="alz.file.mapper"/>
+		<mybatis-spring:scan base-package="alz.myPage.mapper"/>
+		<mybatis-spring:scan base-package="alz.admin.mapper"/>
+		<mybatis-spring:scan base-package="alz.classroom.mapper"/>
+
+
+		
+		<context:component-scan base-package="alz.user.service">
+		</context:component-scan>
+		<context:component-scan base-package="alz.lesson.service">
+		</context:component-scan>
+		<context:component-scan base-package="alz.order.service">
+		</context:component-scan>
+		<context:component-scan base-package="alz.board.service">
+		</context:component-scan>
+<!-- 		<context:component-scan base-package="alz.message">
+		</context:component-scan> -->
+		<context:component-scan base-package="alz.file.task">
+		</context:component-scan>
+		<context:component-scan base-package="alz.user.task">
+		</context:component-scan>
+     	<context:component-scan base-package="alz.myPage.service">
+		</context:component-scan>
+     	<context:component-scan base-package="alz.admin.service">
+		</context:component-scan>
+		<context:component-scan base-package="alz.classroom.service">
+		</context:component-scan>
+		
+		<tx:annotation-driven/>
+		<task:annotation-driven/>
+
+		<aop:aspectj-autoproxy proxy-target-class="true"/>
+
+</beans>

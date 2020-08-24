@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.lesson.mapper.LessonMapper">
+
+	<select id="getTotalCount" resultType="int">
+		select count(*)
+		from alz_lesson lesson
+		where lesson.id > 0
+		<include refid="lessonCriteria"></include>	
+		and lesson.state = ${state}
+	</select>
+
+	<sql id="lessonCriteria">
+		<trim prefix="AND (" suffix=")" prefixOverrides="OR">
+			<choose>
+			    <when test="(categoryMain != null and categoryMain!=0) and categorySub == null">
+			      lesson.category_main =  #{categoryMain}
+			    </when>
+			    <when test="(categoryMain != null and categoryMain!=0) and categorySub != null">
+			      lesson.category_main = #{categoryMain} 
+			      and lesson.category_sub = #{categorySub}
+				</when>
+				<when test="keyword != null">
+			      title like '%'||#{keyword}||'%'
+			    </when>
+			</choose>
+		</trim>
+	</sql>
+
+   <select id="findAll" resultType="alz.lesson.domain.LessonDTO">
+      select lesson.id id, lesson.teacher_id teacherId, lesson.category_main categoryMain, lesson.category_sub categorySub,
+      		 category.name categoryName, category.total categoryTotal, lesson.title, lesson.lesson_type lessonType, lessonType.type typeName, 
+      		 lessonLevel.id, lessonLevel.lesson_level levelName, lesson.min_student minStudent, lesson.max_student maxStudent, 
+          	 lesson.current_student currentStudent, lesson.state state, lesson.open_at openAt, lesson.close_at closeAt, lesson.thumbnail,
+          	 merchandise.origin_price originRate, merchandise.sale_price salePrice, merchandise.discount_rate discountRate
+    	from alz_lesson lesson, 
+        	 alz_lesson_type lessonType, 
+			 alz_lesson_level lessonLevel,
+	 		 alz_lesson_state lessonState,
+			 alz_category category,
+             alz_merchandise merchandise
+	   where lesson.lesson_type = lessonType.id 
+		 and lesson.lesson_level = lessonLevel.id
+		 and lesson.state = lessonState.id
+		 and lesson.category_main = category.main
+		 and lesson.category_sub = category.sub
+         and lesson.id = merchandise.ref_id
+   </select>
+   
+   <select id="findWithPaging" resultType="alz.lesson.domain.LessonDTO">
+   <![CDATA[
+     select id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+            typeName, levelName, minStudent, maxStudent, currentStudent, state,
+            openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+     from   (select rownum, rn, id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+                    typeName, levelName, minStudent, maxStudent, currentStudent, state,
+                    openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+             from   (select rownum rn, id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+                            typeName, levelName, minStudent, maxStudent, currentStudent, state,
+                            openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+                     from   (select lesson.id id, lesson.teacher_id teacherId, lesson.category_main categoryMain, lesson.category_sub categorySub,
+                                 	category.name categoryName, lesson.title, lesson.lesson_type lessonType, lessonType.type typeName, 
+                                	lessonLevel.lesson_level levelName, lesson.min_student minStudent, lesson.max_student maxStudent, 
+                                	lesson.current_student currentStudent, lesson.state state, lesson.open_at openAt, lesson.close_at closeAt, lesson.thumbnail,
+          	 						merchandise.origin_price originPrice, merchandise.sale_price salePrice, merchandise.discount_rate discountRate
+                           	 from   alz_lesson lesson, 
+                                	alz_lesson_type lessonType, 
+                                	alz_lesson_level lessonLevel,
+                                	alz_lesson_state lessonState,
+                                	alz_category category,
+             						alz_merchandise merchandise
+                         	 where 	lesson.lesson_type = lessonType.id 
+                            	and lesson.lesson_level = lessonLevel.id
+                             	and lesson.state = lessonState.id
+                             	and lesson.category_main = category.main
+                                and lesson.category_sub = category.sub
+       							and lesson.id = merchandise.ref_id
+                            	and lesson.state = #{state}
+		   ]]>
+		<include refid="lessonCriteria"></include>
+		<![CDATA[
+                            order by lesson.id desc
+                            )
+                      where rownum <= #{pageNum} * #{amount}
+                      )
+			     )
+		   where rn > (#{pageNum} -1) * #{amount}
+		   ]]>
+   </select>
+
+   <resultMap type="alz.lesson.domain.CurriculumSubjectDTO" id="subjectMap">
+      <id property="subjectId" column="id"/>
+      <result property="curriculumOrder" column="curriculum_order"/>
+      <result property="subject" column="subject"/>
+      
+      <collection property="detailList" ofType="alz.lesson.domain.CurriculumDetailDTO">
+         <id property="detailOrder" column="curriculum_detail_order"/>
+         <result property="detail" column="detail"/>
+      </collection>
+   </resultMap>
+   
+   <select id="findCurriculumByLessonId" resultMap="subjectMap">
+      select c.id, c.curriculum_order, c.subject, d.curriculum_detail_order, d.detail
+		from alz_curriculum c, alz_curriculum_detail d
+	   where c.id = d.curriculum_id
+		 and c.lesson_id = #{id}
+	order by c.curriculum_order, d.curriculum_detail_order
+   </select>
+   
+   <select id="findTeacherByLessonId" resultType="alz.lesson.domain.TeacherDTO">
+      select alz_teacher.id, alz_teacher.user_id userId, alz_teacher.nickname, alz_teacher.profile, 
+             alz_teacher.sns_type snsType, alz_teacher.sns_id snsId, alz_teacher.sns_url snsUrl
+        from alz_lesson, alz_teacher
+       where alz_lesson.teacher_id = alz_teacher.id
+         and alz_lesson.id = #{id}
+   </select>
+   
+   <select id="findQuickReviewByLessonId" resultType="alz.lesson.domain.QuickReviewDTO">
+      select alz_lesson_quickreview.user_id userId, alz_lesson_quickreview.lesson_id lessonId, 
+             alz_lesson_quickreview.rate, alz_lesson_quickreview.content, alz_user.nickname
+        from alz_lesson_quickreview, alz_user
+       where alz_lesson_quickreview.user_id = alz_user.id
+         and alz_lesson_quickreview.lesson_id = #{id}
+    order by alz_lesson_quickreview.id desc
+   </select>
+   
+   <select id="findByLessonId" resultType="alz.lesson.domain.LessonDTO">
+      select lesson.id id, lesson.teacher_id teacherId, lesson.category_main categoryMain, lesson.category_sub categorySub, 
+             category.name categoryName, lesson.title, lesson.lesson_type lessonType, lessontype.type typeName,
+             lesson.lesson_level lessonLevel, lessonLevel.lesson_level levelName, lesson.min_student minStudent, lesson.max_student maxStudent, 
+             lesson.current_student currentStudent, lesson.state state, lesson.open_at openAt, lesson.close_at closeAt, 
+             schedule.start_at startAt, schedule.end_at endAt, detail.detail detail, lesson.thumbnail
+        from alz_lesson lesson, 
+             alz_lesson_type lessonType, 
+             alz_lesson_level lessonLevel,
+             alz_lesson_state lessonState,
+             alz_category category,
+             alz_lesson_detail detail
+       where lesson.lesson_type = lessonType.id 
+         and lesson.lesson_level = lessonLevel.id
+         and lesson.state = lessonState.id
+         and lesson.category_main = category.main
+         and lesson.category_sub = category.sub
+         and lesson.id = detail.lesson_id
+         and lesson.id = #{id}
+    order by lesson.id
+   </select>
+   
+   <select id="findBasicByLessonId" resultType="alz.lesson.domain.LessonDTO">
+      select lesson.id id, lesson.teacher_id teacherId, lesson.category_main categoryMain, lesson.category_sub categorySub,  
+             category.name categoryName, lesson.title, lesson.lesson_type lessonType, lessonType.type typeName, lessonLevel.id lessonLevel,
+             lessonLevel.lesson_level levelName, lesson.min_student minStudent, lesson.max_student maxStudent, 
+             lesson.current_student currentStudent, lesson.state state, lesson.open_at openAt, lesson.close_at closeAt, lesson.thumbnail
+        from alz_lesson lesson, 
+             alz_lesson_type lessonType, 
+             alz_lesson_level lessonLevel,
+             alz_lesson_state lessonState,
+             alz_category category
+       where lesson.lesson_type = lessonType.id 
+         and lesson.lesson_level = lessonLevel.id
+         and lesson.state = lessonState.id
+         and lesson.category_main = category.main
+         and lesson.category_sub = category.sub
+         and lesson.id = #{id}
+    order by lesson.id
+   </select>
+
+   <select id="findTeacherByUserId" resultType="alz.lesson.domain.TeacherDTO">
+      select id, user_id userId, nickname, profile, sns_type snsType, sns_id snsId, sns_url snsUrl
+        from alz_teacher
+       where user_id = #{userId}
+   </select>
+   
+   <select id="findReview" resultType="alz.lesson.domain.ReviewDTO">
+      select round(avg(lesson_review),0) lessonReviewRate, round(avg(teacher_review),0) teacherReviewRate, lesson_id lessonId
+		from alz_lesson_review
+	group by lesson_id
+   </select>
+   
+   <select id="findQuickReview" resultType="alz.lesson.domain.ReviewDTO">
+      select round(avg(rate),0) quickReviewRate
+		from alz_lesson_quickreview
+	group by lesson_id
+   </select>
+   
+   <select id="lessonsByTeacherId" resultType="alz.lesson.domain.LessonDTO">
+      select l.id id, l.teacher_id teacherId, l.category_main categoryMain, l.category_sub categorySub,   
+            l.title, l.lesson_level lessonLevel, l.lesson_type lessonType,
+            l.min_student minStudent, l.max_student maxStudent, l.state,
+            l.current_student currentStudent, l.state state, l.open_at openAt, l.close_at closeAt
+        from alz_lesson l, alz_teacher t
+       where l.teacher_id = t.id
+       	 and l.state = #{state}
+         and l.teacher_id = #{teacherId}
+    order by l.id
+   </select>
+   
+   <select id="lessonByTeacherId" resultType="alz.lesson.domain.LessonDTO">
+      select l.id id, l.teacher_id teacherId, l.category_main categoryMain, l.category_sub categorySub,   
+            l.title, l.lesson_level lessonLevel, l.lesson_type lessonType,
+            l.min_student minStudent, l.max_student maxStudent, l.state,
+            l.current_student currentStudent, l.state state, l.open_at openAt, l.close_at closeAt
+        from alz_lesson l, alz_teacher t
+       where l.teacher_id = t.id
+       	 and l.state = #{state}
+         and l.teacher_id = #{teacherId}
+    order by l.id
+   </select>
+   
+   <select id="findMainCategory" resultType="alz.lesson.domain.CategoryDTO">
+      select id, main, sub, name, description, total
+        from alz_category
+       where sub = 0
+   </select>
+   
+   <select id="findSubCategory" resultType="alz.lesson.domain.CategoryDTO">
+      select id, main, sub, name, description, total
+        from alz_category
+       where sub > 0
+   </select>
+   
+   <select id="findLessonLevel" resultType="alz.lesson.domain.CategoryDTO">
+      select id, lesson_level name
+        from alz_lesson_level
+   </select>
+   
+   <select id="findLessonDetail" resultType="alz.lesson.domain.LessonDetailDTO">
+      select id, lesson_id, detail
+        from alz_lesson_detail
+       where lesson_id = #{lessonId}
+   </select>
+   
+   <select id="findTimetableByLessonId" resultType="alz.lesson.domain.TimeTableDTO">
+      select lesson_id lessonId, lesson_date lessonDate, start_at startAt, end_at endAt
+	  from   alz_lesson_schedule
+	  where  lesson_id = #{lessonId}
+	  order  by lesson_date
+   </select>
+   
+   <resultMap type="alz.lesson.domain.ScheduleDTO" id="timeTableMap">
+      <result property="lessonId" column="lesson_id"/>
+      <result property="openAt" column="open_at"/>
+      <result property="closeAt" column="close_at"/>
+      
+      <collection property="timeTable" ofType="alz.lesson.domain.TimeTableDTO">
+      	  <result property="timeTableId" column="id"/>
+	      <result property="lessonDate" column="lesson_date"/>
+	      <result property="startAt" column="start_at"/>
+	      <result property="endAt" column="end_at"/>
+      </collection>
+   </resultMap>
+   
+	<select id="findLessonSchedule" resultMap="timeTableMap">
+		select s.lesson_id, s.id, l.open_at, l.close_at, s.lesson_date, s.start_at, s.end_at
+		  from alz_lesson l, alz_lesson_schedule s
+		 where l.id = s.lesson_id
+		   and l.id = #{lessonId}
+	</select>
+	
+   <insert id="insertTeacher" parameterType="alz.lesson.domain.TeacherDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			select alz_teacher_seq.nextval from dual
+		</selectKey>
+	      insert into alz_teacher (id, user_id, nickname, profile, sns_type, sns_id, sns_url)
+	      values(#{id}, #{userId}, #{nickname}, #{profile}, #{snsType, jdbcType=VARCHAR}, 
+	      		 #{snsId, jdbcType=VARCHAR}, #{snsUrl, jdbcType=VARCHAR})
+   </insert>
+   
+   <insert id="insertLesson" parameterType="alz.lesson.domain.LessonDTO" >
+      <selectKey keyProperty="id" order="BEFORE" resultType="long">
+         select alz_lesson_seq.nextval from dual
+      </selectKey>
+      insert into alz_lesson (id, teacher_id, category_main, category_sub, title, lesson_type, lesson_level,
+                            min_student, max_student, open_at, close_at, thumbnail)
+      values (#{id}, #{teacherId}, #{categoryMain}, #{categorySub}, #{title}, #{lessonType}, #{lessonLevel},
+             #{minStudent}, #{maxStudent}, #{openAt}, #{closeAt}, #{thumbnail})
+   </insert>
+   
+   <insert id="insertSchedule" parameterType="alz.lesson.domain.TimeTableDTO" >
+      insert into alz_lesson_schedule (id, lesson_id, lesson_date, start_At, end_At)
+      values (alz_lesson_schedule_seq.nextval, #{timeTableId}, #{lessonDate}, #{startAt}, #{endAt})
+   </insert>
+   
+   <insert id="insertLessonDetail" parameterType="alz.lesson.domain.LessonDetailDTO" >
+      <selectKey keyProperty="id" order="BEFORE" resultType="long">
+         select alz_lesson_detail_seq.nextval from dual
+      </selectKey>
+      insert into alz_lesson_detail (id, lesson_id, detail)
+      values (#{id}, #{lessonId}, #{detail})
+   </insert>
+   
+   <insert id="insertCurriculumSubject" parameterType="alz.lesson.domain.CurriculumSubjectDTO" >
+      <selectKey keyProperty="subjectId" order="BEFORE" resultType="long">
+         select ALZ_CURRICULUM_SEQ.nextval from dual
+      </selectKey>
+      insert into alz_curriculum (id, lesson_id, curriculum_order, subject)
+      values (#{subjectId}, #{lessonId}, #{curriculumOrder}, #{subject})
+   </insert>
+   
+   <insert id="insertCurriculumDetail" parameterType="alz.lesson.domain.CurriculumDetailDTO" >
+      insert into alz_curriculum_detail (id, curriculum_id, lesson_id, curriculum_detail_order, detail)
+      values (alz_curriculum_detail_seq.nextval, #{curriculumId}, #{lessonId}, #{detailOrder}, #{detail})
+   </insert>
+   
+   <insert id="insertQuickReview" parameterType="alz.lesson.domain.QuickReviewDTO" >
+      insert into alz_lesson_quickreview (id, lesson_id, rate, content, user_id)
+      values (alz_lesson_quickreview_seq.nextval, #{lessonId}, #{rate}, #{content}, #{userId})
+   </insert>
+   
+   <update id="updateLesson" parameterType="alz.lesson.domain.LessonDTO">
+      update alz_lesson
+      set    title = #{title},
+             lesson_type = #{lessonType},
+             lesson_level = #{lessonLevel},
+             min_student = #{minStudent},
+             max_student = #{maxStudent},
+             open_at = #{openAt},
+             close_at = #{closeAt},
+             thumbnail = #{thumbnail},
+             state = 1
+      WHERE id = #{id}
+   </update>
+   
+   <update id="updateTeacher" parameterType="alz.lesson.domain.TeacherDTO">
+      update alz_teacher
+      set    nickname = #{nickname},
+            profile = #{profile},
+            sns_type = #{snsType},
+            sns_id = #{snsId},
+            sns_url = #{snsUrl}
+      where  id = #{id}
+   </update>
+   
+   <update id="updateLessonDetail" parameterType="alz.lesson.domain.LessonDetailDTO">
+      update alz_lesson_detail
+      	 set detail = #{detail}
+      where  id = #{id}
+   </update>
+   
+   <update id="updateState" parameterType="alz.lesson.domain.LessonDTO"> 
+      update alz_lesson
+      	 set state = #{state}
+       where id = #{id}
+   </update>
+   
+   <delete id="deleteLesson">
+      delete from alz_lesson where id = #{id}
+   </delete>
+   
+   <delete id="deleteSchedule">
+      delete from alz_lesson_schedule
+       where lesson_id = #{lessonId}
+   </delete>
+   
+   <delete id="deleteLessonDetail">
+      delete from alz_lesson_detail
+       where id = #{id}
+   </delete>
+
+   <delete id="deleteCurriculum">
+      delete from alz_curriculum
+       where lesson_id = #{lessonId}
+   </delete>
+   
+   <delete id="deleteCurriculumDetail">
+      delete from alz_curriculum_detail
+       where lesson_id = #{lessonId}
+   </delete>
+   
+    <select id="getNewList" resultType="alz.lesson.domain.LessonDTO">
+       <![CDATA[
+		select id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+            typeName, levelName, minStudent, maxStudent, currentStudent, state,
+            openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+     from   (select rownum, rn, id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+                    typeName, levelName, minStudent, maxStudent, currentStudent, state,
+                    openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+             from   (select rownum rn, id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+                            typeName, levelName, minStudent, maxStudent, currentStudent, state,
+                            openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+                     from   (select lesson.id id, lesson.teacher_id teacherId, lesson.category_main categoryMain, lesson.category_sub categorySub,
+                                 	category.name categoryName, lesson.title, lesson.lesson_type lessonType, lessonType.type typeName, 
+                                	lessonLevel.lesson_level levelName, lesson.min_student minStudent, lesson.max_student maxStudent, 
+                                	lesson.current_student currentStudent, lesson.state state, lesson.open_at openAt, lesson.close_at closeAt, lesson.thumbnail,
+          	 						merchandise.origin_price originPrice, merchandise.sale_price salePrice, merchandise.discount_rate discountRate
+                           	 from   alz_lesson lesson, 
+                                	alz_lesson_type lessonType, 
+                                	alz_lesson_level lessonLevel,
+                                	alz_lesson_state lessonState,
+                                	alz_category category,
+             						alz_merchandise merchandise
+                         	 where 	lesson.lesson_type = lessonType.id 
+                            	and lesson.lesson_level = lessonLevel.id
+                             	and lesson.state = lessonState.id
+                             	and lesson.category_main = category.main
+                                and lesson.category_sub = category.sub
+       							and lesson.id = merchandise.ref_id
+                            	and lesson.state = 7
+                                order by open_at
+                                )
+                                where rownum <= 5
+                                )
+                                )
+                                where rn > 0
+                                ]]>
+	</select>
+	
+	    <select id="getSoonList" resultType="alz.lesson.domain.LessonDTO">
+	       <![CDATA[
+		select id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+            typeName, levelName, minStudent, maxStudent, currentStudent, state,
+            openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+     from   (select rownum, rn, id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+                    typeName, levelName, minStudent, maxStudent, currentStudent, state,
+                    openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+             from   (select rownum rn, id, teacherId, categoryMain, categorySub, categoryName, title, lessonType, 
+                            typeName, levelName, minStudent, maxStudent, currentStudent, state,
+                            openAt, closeAt, thumbnail, originPrice, salePrice, discountRate
+                     from   (select lesson.id id, lesson.teacher_id teacherId, lesson.category_main categoryMain, lesson.category_sub categorySub,
+                                 	category.name categoryName, lesson.title, lesson.lesson_type lessonType, lessonType.type typeName, 
+                                	lessonLevel.lesson_level levelName, lesson.min_student minStudent, lesson.max_student maxStudent, 
+                                	lesson.current_student currentStudent, lesson.state state, lesson.open_at openAt, lesson.close_at closeAt, lesson.thumbnail,
+          	 						merchandise.origin_price originPrice, merchandise.sale_price salePrice, merchandise.discount_rate discountRate
+                           	 from   alz_lesson lesson, 
+                                	alz_lesson_type lessonType, 
+                                	alz_lesson_level lessonLevel,
+                                	alz_lesson_state lessonState,
+                                	alz_category category,
+             						alz_merchandise merchandise
+                         	 where 	lesson.lesson_type = lessonType.id 
+                            	and lesson.lesson_level = lessonLevel.id
+                             	and lesson.state = lessonState.id
+                             	and lesson.category_main = category.main
+                                and lesson.category_sub = category.sub
+       							and lesson.id = merchandise.ref_id
+                            	and lesson.state = 7
+                                order by close_at desc
+                                )
+                                where rownum <= 5
+                                )
+                                )
+                                where rn > 0
+                                ]]>
+	</select>
+   
+   
+   
+   
+   
+   	<select id="getLikeCnt" resultType="long">
+		select like_cnt from
+		ALZ_LESSON where id = #{id}
+	</select>
+   
+   
+   	<insert id="addLike" parameterType="alz.lesson.domain.LessonLikeDTO">
+			<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			select ALZ_LIKE_LESSON_SEQ.nextval from dual
+			</selectKey>	
+		insert into ALZ_LINK_LIKE_LESSON (id, user_id, lesson_id)
+		values(#{id}, #{userId}, #{lessonId})
+	</insert>
+	
+	<select id="getLike" parameterType="alz.lesson.domain.LessonLikeDTO" resultType="alz.lesson.domain.LessonLikeDTO">
+		select * from ALZ_LINK_LIKE_LESSON WHERE user_id = #{userId} and lesson_id = #{lessonId}
+	</select>
+	
+	<delete id="removeLike" parameterType="alz.lesson.domain.LessonLikeDTO">
+		delete from ALZ_LINK_LIKE_LESSON WHERE user_id = #{userId} and lesson_id = #{lessonId}
+	</delete>
+	
+	
+	
+	<select id="getReservCnt" resultType="long">
+		select reserv_cnt from
+		ALZ_LESSON where id = #{id}
+	</select>
+   
+   
+   	<insert id="addReserv" parameterType="alz.lesson.domain.LessonReservDTO">
+			<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			select ALZ_RESERV_LESSON_SEQ.nextval from dual
+			</selectKey>	
+		insert into ALZ_LINK_RESERV_LESSON (id, user_id, lesson_id)
+		values(#{id}, #{userId}, #{lessonId})
+	</insert>
+	
+	<select id="getReserv" parameterType="alz.lesson.domain.LessonReservDTO" resultType="alz.lesson.domain.LessonReservDTO">
+		select * from ALZ_LINK_RESERV_LESSON WHERE user_id = #{userId} and lesson_id = #{lessonId}
+	</select>
+	
+	<delete id="removeReserv" parameterType="alz.lesson.domain.LessonReservDTO">
+		delete from ALZ_LINK_RESERV_LESSON WHERE user_id = #{userId} and lesson_id = #{lessonId}
+	</delete>
+   
+   
+   
+   
+</mapper>

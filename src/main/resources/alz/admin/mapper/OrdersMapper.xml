@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.admin.mapper.OrdersMapper">
+
+	<select id="orderList" resultType="alz.order.domain.OrderAllDTO">
+		SELECT rownum no,
+		order_at,t.id,user_id,email, name,phone, merchandise_name,
+		total_price, state, count
+		FROM
+		(SELECT rownum no, order_at,id,user_id,
+		name,phone, merchandise_name, total_price, state, count
+		FROM
+		(select
+		order_at,id,user_id, name,phone, merchandise_name, total_price,
+		state,
+		b.count
+		from
+		(select order_at,id,user_id, name,phone,
+		merchandise_name,
+		total_price, state
+		from
+		(select order_at,id,user_id,
+		name,phone,
+		max(merchandise) merchandise_name, total_price, state
+		from
+		(select
+		o.order_at, o.id,d.user_id, o.name, o.phone, m.name
+		merchandise,
+		o.total_price, o.state
+		from
+		alz_order o
+		inner join
+		alz_order_detail d on
+		o.id = d.order_id
+		inner join
+		alz_merchandise m on m.id =
+		d.merchandise_id
+		where
+		d.order_id =
+		o.id and o.user_id = d.user_id)
+		group
+		by order_at,id,user_id,
+		name,phone, total_price, state)) a,
+		(SELECT
+		order_id, COUNT(*)count FROM alz_order_detail GROUP BY order_id) b
+		where a.id = b.order_id order by order_at desc)) t, alz_user u
+		where
+		t.user_id = u.id
+
+	</select>
+
+	<!-- 쿼리..... -->
+	<select id="orderListPaging"
+		resultType="alz.order.domain.OrderAllDTO">
+	<![CDATA[
+		SELECT rownum no, order_at,id,user_id,email, name,phone, merchandise_name, total_price, state, count
+		FROM
+        (SELECT rownum no, order_at,id,user_id,email, name,phone, merchandise_name, total_price, state, count
+		FROM
+		(SELECT rownum no, order_at,t.id,user_id,email, name,phone, merchandise_name, total_price, state, count
+		FROM
+		(SELECT rownum no, order_at,id,user_id, name,phone, merchandise_name, total_price, state, count
+		FROM 
+		(select order_at,id,user_id, name,phone, merchandise_name, total_price, state, b.count
+		FROM
+		(select order_at,id,user_id, name,phone, merchandise_name, total_price, state
+		FROM
+		(select order_at,id,user_id, name,phone, max(merchandise) merchandise_name, total_price, state
+		FROM
+		(select o.order_at, o.id,d.user_id, o.name, o.phone, m.name merchandise, o.total_price, o.state
+		FROM
+		alz_order o
+		INNER JOIN alz_order_detail d ON o.id = d.order_id
+		INNER JOIN alz_merchandise m ON m.id = d.merchandise_id
+		WHERE
+		d.order_id = o.id and o.user_id = d.user_id)
+		group by order_at,id,user_id, name,phone, total_price, state)) a, 
+		(SELECT order_id, COUNT(*)count FROM alz_order_detail GROUP BY order_id) b
+		WHERE a.id = b.order_id order by order_at desc)) t, alz_user u 
+        WHERE t.user_id = u.id )
+		WHERE 
+		]]>
+		<trim prefixOverrides="OR" suffix=") AND " prefix="(">
+			<foreach collection="typeArr" item="type">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'N'.toString()">id like '%'||#{keyword}||'%' </when>
+						<when test="type == 'O'.toString()">name like '%'||#{keyword}||'%' </when>
+						<when test="type == 'P'.toString()">phone like '%'||#{keyword}||'%' </when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+		<![CDATA[    
+      	rownum <= #{pageNum} * #{amount}
+      	)
+ 		WHERE no > (#{pageNum} -1) * #{amount}   
+  		]]>
+
+	</select>
+
+	<select id="getTotalCount" resultType="int">
+		select count(*) from
+		(SELECT rownum no, order_at,id,
+		name,phone,
+		merchandise_name,
+		total_price, state, count
+		FROM (select order_at,id,
+		name,phone,
+		merchandise_name, total_price,
+		state, b.count from
+		(select
+		order_at,id,
+		name,phone, merchandise_name, total_price, state
+		from(select
+		order_at,id, name,phone, max(merchandise)
+		merchandise_name,
+		total_price, state
+		from (select o.order_at, o.id, o.name, o.phone,
+		m.name merchandise,
+		o.total_price, o.state
+		from alz_order o
+		inner join
+		alz_order_detail d on o.id = d.order_id
+		inner join
+		alz_merchandise m on m.id = d.merchandise_id
+		where d.order_id =
+		o.id and o.user_id = d.user_id)
+		group by order_at,id, name,phone,
+		total_price, state)
+		) a, (SELECT order_id, COUNT(*)count FROM
+		alz_order_detail GROUP BY
+		order_id) b
+		where a.id = b.order_id
+		order by
+		order_at desc)) where
+		<include refid="criteria" />
+		no > 0
+	</select>
+
+	<sql id="criteria">
+		<trim prefixOverrides="OR" suffix=") AND " prefix="(">
+			<foreach collection="typeArr" item="type">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'N'.toString()">id like '%'||#{keyword}||'%' </when>
+						<when test="type == 'O'.toString()">name like '%'||#{keyword}||'%' </when>
+						<when test="type == 'P'.toString()">phone like '%'||#{keyword}||'%' </when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+
+	<select id="getList" resultType="alz.order.domain.OrderAllDTO">
+		<![CDATA[
+		select count(*) from
+		(SELECT rownum no, order_at,id,
+		name,phone, merchandise_name,
+		total_price, state, count
+		FROM (select order_at,id, name,phone,
+		merchandise_name, total_price,
+		state, b.count from
+		(select order_at,id,
+		name,phone, merchandise_name, total_price, state
+		from(select
+		order_at,id, name,phone, max(merchandise)
+		merchandise_name,
+		total_price, state
+		from (select o.order_at, o.id, o.name, o.phone,
+		m.name merchandise,
+		o.total_price, o.state
+		from alz_order o
+		inner join
+		alz_order_detail d on o.id = d.order_id
+		inner join
+		alz_merchandise m on m.id = d.merchandise_id
+		where d.order_id =
+		o.id and o.user_id = d.user_id)
+		group by order_at,id, name,phone,
+		total_price, state)
+		) a, (SELECT order_id, COUNT(*)count FROM
+		alz_order_detail GROUP BY
+		order_id) b
+		where a.id = b.order_id
+		order by
+		order_at desc)) where no > 0
+		]]>
+	</select>
+
+	<update id="stateChange"
+		parameterType="alz.order.domain.OrderDTO">
+		update alz_order set state = #{state} where id = #{id}
+	</update>
+	
+	<select id="myOrderListPaging"
+		resultType="alz.order.domain.OrderAllDTO">
+		SELECT * from (select rownum no, id, order_at, total_price, state
+		from alz_order
+		WHERE user_id = #{userId} and
+		<![CDATA[    
+      	rownum <= #{pageNum} * #{amount}
+      	)
+ 		WHERE no > (#{pageNum} -1) * #{amount}   
+  		]]>
+		order by order_at desc
+	</select>
+	
+	<select id="cancelListPaging"
+		resultType="alz.order.domain.OrderAllDTO">
+		SELECT * from (select rownum no, id, order_at, total_price, state
+		from alz_order
+		WHERE user_id = #{userId} and state = '취소 완료' and
+		<![CDATA[    
+      	rownum <= #{pageNum} * #{amount}
+      	)
+ 		WHERE no > (#{pageNum} -1) * #{amount}   
+  		]]>
+		order by order_at desc
+	</select>
+	
+	
+	<select id="getMyTotalCount" resultType="int">
+		select count(*) from alz_order
+		WHERE user_id = #{userId}
+	</select>
+	
+	<select id="cancelTotalCount" resultType="int">
+		select count(*) from alz_order
+		WHERE user_id = #{userId} and state = '취소 완료'
+	</select>
+
+</mapper>

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="alz.admin.mapper.AdminUserMapper">
+
+	<!-- 이메일 중복 체크 -->
+	<select id="emailChk" resultType="Integer">
+		SELECT COUNT(*) FROM alz_user
+		WHERE email = #{email}
+	</select>
+
+	<!-- 닉네임 중복 체크 -->
+	<select id="nicknameChk" resultType="Integer">
+		SELECT COUNT(*) FROM
+		alz_user
+		WHERE nickname = #{nickname}
+	</select>
+
+	<!-- 아이디로 정보 가져오기(아래서 비번체크와 연동) -->
+	<select id="selectByEmail" resultType="alz.user.domain.UserDTO">
+		SELECT * FROM alz_user
+		WHERE email = #{email}
+	</select>
+
+	<!-- 01. 회원목록 -->
+	<select id="userList" resultType="alz.user.domain.UserDTO">
+		<![CDATA[
+			select 
+			u.id, email, nickname, password, role, certification_State certificationState, phone_Number phoneNumber, enable, state, start_At startAt, end_At endAt, description
+			from 
+			alz_user u LEFT OUTER JOIN alz_user_state s on 
+			u.id = s.user_id
+			WHERE u.id >= 0
+      ]]>
+	</select>
+
+	<!-- 02. 회원 등록 -->
+	<!-- <insert id="insertManager"
+		parameterType="alz.user.domain.UserDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_user_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO ALZ_USER (ID, EMAIL, NICKNAME, PASSWORD, ROLE,
+		PHONE_NUMBER)
+		VALUES(#{id}, #{email}, #{nickname}, #{password},
+		#{role}, #{phoneNumber})
+	</insert> -->
+	<!-- 02. 회원 등록 -->
+	<!-- <insert id="insertUser" parameterType="alz.user.domain.UserDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_user_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO ALZ_USER (ID, EMAIL, NICKNAME, PASSWORD, ROLE,
+		PHONE_NUMBER)
+		VALUES(#{id}, #{email}, #{nickname}, #{password},
+		#{role}, #{phoneNumber})
+	</insert> -->
+
+	<!-- 03. 회원정보 상세조회 -->
+	<select id="viewUser" resultType="alz.user.domain.UserDTO">
+		SELECT
+		email, nickname, role,
+		certification_State certificationState,
+		phone_Number phoneNumber
+		FROM
+		alz_user
+		WHERE email = #{email}
+	</select>
+
+	<!-- 04. 회원정보 수정처리 -->
+	<update id="updateUser">
+		UPDATE alz_user
+		SET password = #{password},
+		nickname =
+		#{nickname},
+		PHONE_NUMBER = #{phoneNumber}
+		WHERE email = #{email}
+	</update>
+
+	<!-- 05. 회원정보 삭제 처리 -->
+	<!-- <delete id="deleteUser"> DELETE FROM alz_user WHERE email = #{email} 
+		</delete> -->
+
+	<!-- 06. 비밀번호 체크 -->
+	<select id="checkPw" resultType="int">
+		SELECT
+		COUNT(*)
+		FROM alz_user
+		WHERE email = #{email} AND password = #{password}
+	</select>
+
+	<!-- 회원상태변경 탈퇴 -->
+	<update id="dropOut" parameterType="alz.user.domain.UserDTO">
+		update alz_user
+		set enable = 0
+		where email = #{email}
+	</update>
+	<update id="dropOutStateChange" parameterType="alz.user.domain.UserDTO">
+		update alz_user_state
+		set state = '탈퇴'
+		where user_id = #{id}
+	</update>
+	
+	<!-- 회원상태변경 정지-->
+	<update id="suspended" parameterType="alz.user.domain.UserDTO">
+		update alz_user
+		set enable = 0
+		where email = #{email}
+	</update>
+	<update id="suspendedStateChange" parameterType="alz.user.domain.UserDTO">
+		update alz_user_state
+		set state = '정지'
+		where user_id = #{id}
+	</update>
+	
+	<!-- 회원상태변경 휴면-->
+	<update id="inactive" parameterType="alz.user.domain.UserDTO">
+		update alz_user
+		set enable = 0
+		where email = #{email}
+	</update>
+	<update id="inactiveStateChange" parameterType="alz.user.domain.UserDTO">
+		update alz_user_state
+		set state = '휴면'
+		where user_id = #{id}
+	</update>
+	
+	<!-- 회원상태변경 일반상태-->
+	<update id="backNormal" parameterType="alz.user.domain.UserDTO">
+		update alz_user
+		set enable = 1
+		where email = #{email}
+	</update>
+	<update id="backNormalStateChange" parameterType="alz.user.domain.UserDTO">
+		update alz_user_state
+		set state = '가입'
+		where user_id = #{id}
+	</update>
+	
+	<!-- 회원역할 변경 일반계정-->
+	<update id="asUser" parameterType="alz.user.domain.UserDTO">
+		update alz_user
+		set role = 'ROLE_USER'
+		where email = #{email}
+	</update>
+	
+	<!-- 회원역할 변경 관리자계정-->
+	<update id="asManager" parameterType="alz.user.domain.UserDTO">
+		update alz_user
+		set role = 'ROLE_ADMIN'
+		where email = #{email}
+	</update>
+
+	<!-- 회원 정보 찾기 관련 mapper -->
+	<select id="member_info" resultType="alz.user.domain.UserDTO">
+		select email, nickname,
+		PHONE_NUMBER
+		from alz_user
+		where email=#{email}
+	</select>
+</mapper>

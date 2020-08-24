@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+<mapper namespace="alz.board.mapper.LikeMapper">
+
+	<insert id="addLike" parameterType="alz.board.domain.LikeDTO">
+			<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			select ALZ_LIKE_BOARD_SEQ.nextval from dual
+			</selectKey>	
+		insert into ALZ_LINK_LIKE_BOARD (id, user_id, board_id)
+		values(#{id}, #{userId}, #{boardId})
+	</insert>
+	
+	<select id="getLike" parameterType="alz.board.domain.LikeDTO" resultType="alz.board.domain.LikeDTO">
+		select * from ALZ_LINK_LIKE_BOARD WHERE user_id = #{userId} and board_id = #{boardId}
+	</select>
+	
+	<delete id="removeLike" parameterType="alz.board.domain.LikeDTO">
+		delete from ALZ_LINK_LIKE_BOARD WHERE user_id = #{userId} and board_id = #{boardId}
+	</delete>
+
+</mapper>

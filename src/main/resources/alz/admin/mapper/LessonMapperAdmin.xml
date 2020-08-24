@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.admin.mapper.LessonMapperAdmin">
+
+	<select id="LessonReqList"
+		resultType="alz.admin.domain.LessonDTOAdmin">
+		select l.id id, l.teacher_id teacherId, l.thumbnail thumbnail, l.title title, l.open_at openAt, l.close_at	closeAt, 
+		ls.state state 
+		from alz_lesson l, alz_lesson_state ls
+		where
+		l.state = ls.id
+		and l.state between 2 and 5
+
+	</select>
+
+	<select id="getTotalCount" resultType="int">
+		select count(*)
+		from
+		alz_lesson l, alz_lesson_state ls
+		where l.state = ls.id
+		and l.state
+		between 2 and 5
+	</select>
+	
+	
+	<update id="stateChangebyId" parameterType="alz.admin.domain.LessonStateDTO">
+	update alz_lesson
+	set state = #{state}
+	where id = #{id}
+	</update>
+</mapper>

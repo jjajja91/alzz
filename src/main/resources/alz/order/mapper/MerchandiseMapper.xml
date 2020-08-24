@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.order.mapper.MerchandiseMapper">
+
+
+	<insert id="insert"
+		parameterType="alz.order.domain.MerchandiseDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_merchandise_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO
+		alz_merchandise(
+		ID, CODE_TYPE, NAME, DESCRIPTION, REGISTER_AT,
+		CLOSED_AT,
+		ORIGIN_PRICE, SALE_PRICE, DISCOUNT_RATE, DISCOUNT_DEADLINE,
+		DISPLAY_STATE, REF_ID, USER_ID, STATE
+		)
+		VALUES (
+		#{id}, #{codeType},
+		#{name}, #{description}, #{registerAt}, #{closedAt},
+		#{originPrice},#{salePrice},#{discountRate}, #{discountDeadline},
+		#{displayState}, #{refId}, #{userId}, '등록'
+		)
+	</insert>
+	
+	<select id="selectLessonById" resultType="long">
+		SELECT REF_ID FROM ALZ_MERCHANDISE WHERE id = #{id}
+	</select>
+
+	<select id="selectById"
+		resultType="alz.order.domain.MerchandiseDTO">
+		SELECT * FROM ALZ_MERCHANDISE WHERE id = #{id}
+	</select>
+
+	<select id="selectAll"
+		resultType="alz.order.domain.MerchandiseDTO">
+
+		SELECT * FROM ALZ_MERCHANDISE order by id
+	</select>
+
+	<update id="updateById"
+		parameterType="alz.order.domain.MerchandiseDTO">
+		UPDATE ALZ_MERCHANDISE
+		SET
+		CODE_TYPE = #{codeType},
+		NAME = #{name},
+		DESCRIPTION = #{description},
+		UPDATED_AT
+		= sysdate,
+		CLOSED_AT = #{closedAt},
+		ORIGIN_PRICE = #{originPrice},
+		SALE_PRICE =
+		#{salePrice},
+		DISCOUNT_RATE = #{discountRate},
+		DISCOUNT_DEADLINE =
+		#{discountDeadline},
+		DISPLAY_STATE =
+		#{displayState}
+		WHERE id = #{id}
+	</update>
+
+	<update id="update"
+		parameterType="alz.order.domain.MerchandiseDTO">
+		UPDATE ALZ_MERCHANDISE
+		SET
+		CODE_TYPE = #{codeType},
+		NAME = #{name},
+		DESCRIPTION = #{description},
+		UPDATED_AT
+		= sysdate,
+		CLOSED_AT = #{closedAt},
+		ORIGIN_PRICE = #{originPrice},
+		SALE_PRICE =
+		#{salePrice},
+		DISCOUNT_RATE = #{discountRate},
+		DISCOUNT_DEADLINE =
+		#{discountDeadline},
+		DISPLAY_STATE =
+		#{displayState}
+		WHERE id = #{id}
+	</update>
+
+	<delete id="deleteById">
+		DELETE FROM ALZ_MERCHANDISE WHERE id = #{id}
+	</delete>
+
+
+	<sql id="criteria">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'T'.toString()">
+							CODE_TYPE like '%'||#{keyword}||'%'
+						</when>
+						<when test="type == 'C'.toString()">
+							name like '%'||#{keyword}||'%'
+						</when>
+						<when test="type == 'W'.toString()">
+							DESCRIPTION like '%'||#{keyword}||'%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+
+	<select id="getListWithPaging"
+		resultType="alz.order.domain.MerchandiseDTO">
+	<![CDATA[
+  select 
+    id, code_Type, name, sale_Price
+  from 
+      (
+      select /*+INDEX_DESC(alz_merchandise pk_id) */
+        rownum rn, id, code_Type, name, sale_Price
+      from 
+        alz_merchandise
+      where 
+     
+  ]]>
+
+		<include refid="criteria"></include>
+	
+	<![CDATA[
+		 rownum <= #{pageNum} * #{amount}
+      )
+  		where rn > (#{pageNum} -1) * #{amount}
+  	]]>
+		order by id desc
+	</select>
+
+	<select id="getTotalCount" resultType="int">
+		SELECT count(*) from
+		alz_merchandise where
+
+		<include refid="criteria"></include>
+		id > 0
+
+	</select>
+	
+	<select id="getCount" resultType="int">
+		SELECT count(*) from
+		alz_merchandise where user_id = #{userId}
+
+		<include refid="criteria"></include>
+		and id > 0
+
+	</select>
+	
+	<select id="readByrefId"
+		resultType="alz.order.domain.MerchandiseDTO">
+		SELECT * FROM ALZ_MERCHANDISE m, ALZ_LESSON l WHERE l.id = m.ref_id and m.ref_id = #{id}
+	</select>
+	
+	
+	<select id="findMerchandiseId"
+		resultType="long">
+		SELECT id FROM ALZ_MERCHANDISE where ref_id = #{id}
+	</select>
+	
+	<select id="getMyListWithPaging"
+		resultType="alz.order.domain.MerchandiseDTO">
+	<![CDATA[
+  select 
+    id, code_Type, name, sale_Price
+  from 
+      (
+      select /*+INDEX_DESC(alz_merchandise pk_id) */
+        rownum rn, id, code_Type, name, sale_Price
+      from 
+        alz_merchandise
+      where user_id = #{userId}
+     
+  ]]>
+
+		<include refid="criteria"></include>
+	
+	<![CDATA[
+	and rownum <= #{pageNum} * #{amount}
+      )
+  		where rn > (#{pageNum} -1) * #{amount}
+  	]]>
+
+	</select>
+	
+<!-- 
+	<insert id="insertCart" parameterType="alz.order.domain.CartDTO">
+		<selectKey keyProperty="cartId" order="BEFORE"
+			resultType="long">
+			SELECT alz_cart_seq.nextval FROM dual
+		</selectKey>
+		insert into alz_cart (cart_id, user_Id, merchandise_id,
+		amount)
+		values
+		(#{cartId}, #{userId}, #{merchandiseId}, #{amount})
+	</insert>
+
+	<select id="countCart" resultType="int">
+		SELECT COUNT(*) FROM alz_cart
+		WHERE user_Id= #{userId} AND merchandise_id = #{merchandiseId}
+	</select>
+
+	<select id="listCart" resultType="alz.order.domain.CartDTO">
+		SELECT c.CART_id, c.USER_ID,
+		p.ID
+		, m.NICKNAME, p.NAME, p.ORIGIN_PRICE
+		FROM alz_user m,
+		alz_merchandise_detail p, alz_cart c
+		WHERE m.id = c.user_Id
+		AND p.id =
+		c.merchandise_id
+		AND c.user_Id = #{userId}
+		ORDER BY c.cart_id
+	</select>
+
+	<select id="sumMoney" resultType="int">
+		SELECT NVL
+		(sum(ORIGIN_PRICE),
+		0) money
+		FROM alz_cart c, alz_merchandise_detail p
+		WHERE c.merchandise_id = p.id
+		AND c.user_Id = #{userId}
+	</select>
+
+
+	<delete id="deleteCart">
+		DELETE FROM alz_cart WHERE cart_ID = #{cartId}
+	</delete>
+-->
+</mapper>

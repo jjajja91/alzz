@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alz.order.mapper.OrderMapper">
+
+	<insert id="insertOrder"
+		parameterType="alz.order.domain.OrderDTO">
+		INSERT INTO ALZ_ORDER
+		(ID,USER_ID,NAME,PHONE,METHOD,STATE,TOTAL_PRICE)
+		VALUES
+		(#{id},
+		#{userId}, #{name}, #{phone}, #{method},#{state},#{totalPrice})
+	</insert>
+
+	<insert id="insertOrderDetail"
+		parameterType="alz.order.domain.OrderDetailDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_order_detail_seq.nextval FROM dual
+		</selectKey>
+		insert into alz_order_detail
+		(id, order_id, merchandise_id, user_id)
+		values 
+		(#{id}, #{orderId}, #{merchandiseId}, #{userId})
+	</insert>
+	
+	<insert id="linkStudentForLesson" parameterType="alz.order.domain.LessonStudentDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_lesson_student_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO ALZ_LESSON_STUDENT
+		(ID, LESSON_ID, STUDENT_ID)
+		VALUES(#{id}, #{lessonId}, #{studentId})
+	</insert>
+
+	<delete id="removeCart">
+		delete alz_cart
+		where user_Id = #{userId}
+	</delete>
+
+	<select id="orderResult"
+		resultType="alz.order.domain.OrderDetailDTO">
+		select o.order_id, m.id merchandise_id, m.NAME, m.ORIGIN_PRICE, m.SALE_PRICE, 
+		l.thumbnail, l.open_at, l.teacher_id, l.id lessonId
+		from alz_order_detail o, alz_merchandise m, alz_lesson l
+		where o.order_id = #{orderId}
+		and m.ref_id = l.id
+		and m.id = o.merchandise_id
+	</select>
+	
+	<insert id="orderDetailInsert" parameterType="alz.order.domain.OrderDetailDTO">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT alz_order_detail_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO ALZ_ORDER_DETAIL
+		(ID, ORDER_ID, MERCHANDISE_ID, USER_ID)
+		VALUES
+		(#{id}, #{orderId}, #{merchandiseId}, #{userId})
+	</insert>
+	
+	<select id="findOrderer"
+		resultType="alz.order.domain.OrderDTO">
+		select name, phone
+		from alz_order
+		where id = #{id}
+	</select>
+	
+	
+	
+
+</mapper>
